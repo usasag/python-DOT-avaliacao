@@ -118,30 +118,34 @@ O bot mantém **contexto entre mensagens** — na segunda pergunta, ele já sabe
 
 ---
 
-## 🏗️ Arquitetura LCEL
+## 🏗️ Arquitetura LCEL (LangChain Expression Language)
 
-O LangChain Expression Language (LCEL) compõe a cadeia via operador pipe:
+O LCEL é uma sintaxe declarativa para compor pipelines de processamento preditivo, inspirada no operador _pipe_ (`|`) dos sistemas Unix. Ele resolve o problema das "Chains" legadas (como `LLMChain`), permitindo conectar componentes assíncronos e de forma desacoplada: a saída de um (ex: o prompt formatado) vira a entrada do próximo (ex: o LLM).
 
+Neste chatbot, o fluxo central da mensagem funciona em um pipeline de 3 estágios:
+
+```mermaid
+graph LR
+    A[<b>ChatPromptTemplate</b><br>Monta as instruções,<br>histórico e input] -->|PromptValue| B(<b>Modelo LLM</b><br>GPT-4.1 ou OSS)
+    B -->|AIMessage| C[<b>StrOutputParser</b><br>Extrai apensas a String<br>da resposta bruta]
 ```
-ChatPromptTemplate  →  ChatOpenAI (GPT-4.1)  →  StrOutputParser
-     (prompt)              (modelo)             (extrai texto)
-```
 
-Envolvido por `RunnableWithMessageHistory`, que automaticamente:
+Para fazer o LLM se "lembrar" das conversas, nós embrulhamos essa Pipeline via `RunnableWithMessageHistory`. Este _wrapper_ intercepta a chamada antes e depois de acontecer:
 
-1. **Antes** de cada invocação: injeta o histórico no prompt
-2. **Depois** de cada invocação: salva pergunta + resposta no histórico
+1. **Antes** da execução: Ele recupera o histórico da memória (`InMemoryChatHistory`) e injeta no slot do Prompt (no `MessagesPlaceholder`).
+2. **Durante** a execução: O Prompt funde o Sistema Limitador (comportamento de tutor Python), o histórico e a nova Pergunta; a LLM processa e devolve os dados; o Parser simplifica para texto.
+3. **Depois** da execução: Ele salva automaticamente a dupla (Pergunta e Resposta) na memória da sessão antes de devolver o resultado final para o usuário no Terminal.
 
-### Componentes
+### Detalhamento dos Componentes Utilizados
 
-| Componente | Papel |
+| Componente | Resumo do Papel |
 |---|---|
-| `ChatPromptTemplate` | Monta o prompt com System + Histórico + Input |
-| `MessagesPlaceholder` | Slot dinâmico para o histórico de mensagens |
-| `ChatOpenAI` / `ChatHuggingFace` | Wrapper do modelo LLM |
-| `StrOutputParser` | Extrai string do `AIMessage` |
-| `RunnableWithMessageHistory` | Gerencia o histórico automaticamente |
-| `InMemoryChatHistory` | Armazena mensagens em memória (por sessão) |
+| `ChatPromptTemplate` | Funde o `SystemPrompt`, o _slot_ do histórico e o input do usuário na linguagem ideal para o modelo. |
+| `MessagesPlaceholder` | Uma variável especial que diz ao template em qual local exato despejar as mensagens do histórico. |
+| `ChatOpenAI` ou `ChatHuggingFace` | A API do cérebro (LLM) da aplicação. O LCEL nos permite simplesmente trocar a classe para utilizar outro provedor. |
+| `StrOutputParser` | A API nativa do LLM devolve um objeto complexo (`AIMessage`) com metadados. O parser peneira e extrai apenas a resposta em "String". |
+| `RunnableWithMessageHistory` | A "capa" mágica que orquestra a leitura e escrita automática do histórico para cada nova execução da chain. |
+| `InMemoryChatHistory` | Módulo de armazenamento interno. Mantém as mensagens guardadas na RAM para servir ao _wrapper_ acima. |
 
 ---
 
