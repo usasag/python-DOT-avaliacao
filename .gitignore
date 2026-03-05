@@ -1,5 +1,5 @@
 # Ambiente virtual
-venv/
+*/venv/
 ai-reference/
 
 # Banco de dados SQLite
