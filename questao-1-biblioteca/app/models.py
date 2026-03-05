@@ -1,15 +1,10 @@
 """
-models.py — Definição das entidades do banco de dados (ORM).
+models.py — Entidades do ORM SQLAlchemy.
 
 Decisão Arquitetural:
-    Este módulo contém EXCLUSIVAMENTE as definições de tabelas do banco,
-    separadas dos schemas Pydantic (schemas.py). Essa separação segue o
-    princípio de que o model ORM representa a ESTRUTURA DE PERSISTÊNCIA,
-    enquanto o schema Pydantic representa o CONTRATO DA API.
-
-    Isso permite evoluir o banco (ex: adicionar índices, constraints) sem
-    alterar a interface pública da API, e vice-versa — adicionando campos
-    computados na resposta sem tocar no banco.
+    Adotamos SQLAlchemy 2.0 com `Mapped` e `mapped_column` para aproveitar
+    ao máximo as dicas de tipo estáticas (type hints) nativas do Python.
+    Isso melhora a segurança e a integração com o Type Checker da IDE.
 """
 
 import datetime
@@ -21,13 +16,7 @@ from app.database import Base
 
 
 class Livro(Base):
-    """
-    Entidade que representa um livro na biblioteca virtual.
-
-    Utiliza o estilo Mapped[] do SQLAlchemy 2.0+ para declaração de colunas,
-    que oferece suporte nativo a Type Hints e melhor integração com IDEs
-    e ferramentas de análise estática (mypy, pyright).
-    """
+    """Entidade que representa um livro na biblioteca virtual."""
 
     __tablename__ = "livros"
 

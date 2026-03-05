@@ -1,6 +1,6 @@
 # Ambiente virtual
 */venv/
-ai-reference/
+ai-reference/   
 
 # Banco de dados SQLite
 *.db

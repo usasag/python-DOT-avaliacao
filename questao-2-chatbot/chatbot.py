@@ -1,23 +1,17 @@
 """
-chatbot.py — Chatbot Tutor de Python com LangChain e GPT-4.
+chatbot.py — Chatbot Tutor de Python com LangChain e GPT-4.1/OSS.
+
+A tarefa pede o modelo GPT-4, mas esse modelo não está mais disponível, sendo necessário o uso do GPT-4.1.
+O modelo OSS foi implementado também para maior variação de modelo, pois é boa prática ter fallbacks. Nesse caso só existe um, mas geralmente uso em torno de 4-5.
 
 Decisão Arquitetural:
-    Este script implementa um chatbot de linha de comando que atua como
-    tutor especialista em Python, utilizando LangChain Expression Language
-    (LCEL) para compor a cadeia de processamento de forma declarativa.
-
-    O LCEL substitui as antigas "Chains" do LangChain (LLMChain, etc.)
-    por uma abordagem funcional baseada no operador pipe (`|`), onde cada
-    componente é um "Runnable" que transforma dados sequencialmente:
-
-        Prompt → Modelo (LLM) → Parser de saída
-
-    Essa composição é análoga ao pipe do Unix e permite trocar qualquer
-    componente (ex: modelo, parser) sem alterar o restante da cadeia.
-
-    O histórico de conversação é gerenciado pelo `RunnableWithMessageHistory`,
-    que injeta automaticamente as mensagens anteriores no prompt a cada
-    invocação, mantendo o contexto sem gerenciamento manual.
+    Este script foi projetado para atuar como um chatbot CLI de tutoria Python.
+    A arquitetura utiliza o padrão LangChain Expression Language (LCEL) com 
+    o operador pipe (`|`) para encadear os componentes (`Prompt | LLM | Parser`).
+    
+    Abstração de Modelo: A troca entre modelos pagos (GPT-4.1 via GitHub) e 
+    open-source (via HuggingFace) ocorre de forma transparente (na função `build_llm`),
+    sem modificações na cadeia central, provando o baixo acoplamento da solução LCEL.
 
 Flags:
     --oss : Usa modelo open-source via HuggingFace (requer HUGGINGFACEHUB_API_TOKEN)
@@ -39,26 +33,12 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
-# ---------------------------------------------------------------------------
-# Carregamento seguro das variáveis de ambiente
-# ---------------------------------------------------------------------------
-# `load_dotenv()` lê o arquivo `.env` na raiz do projeto e injeta as
-# variáveis no `os.environ`. Isso evita expor chaves de API no código-fonte
-# ou no histórico do git. A chave será lida automaticamente pelos wrappers
-# do LangChain (ChatOpenAI busca OPENAI_API_KEY, ChatHuggingFace busca
-# HUGGINGFACEHUB_API_TOKEN).
-# ---------------------------------------------------------------------------
 load_dotenv()
 
+# ---------------------------------------------------------------------------
+# Prompt de sistema para configurar o comportamento do tutor
+# ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# System Prompt — Definição do comportamento do tutor
-# ---------------------------------------------------------------------------
-# O SystemPrompt é a instrução fundacional que molda o comportamento da IA.
-# Ele restringe o escopo do chatbot para APENAS Python, recusando
-# educadamente qualquer pergunta fora do tema. Isso é essencial para
-# garantir respostas consistentes e alinhadas com o objetivo do tutor.
-# ---------------------------------------------------------------------------
 SYSTEM_PROMPT: str = """Você é um tutor especialista em Python altamente \
 qualificado. Seu papel é ajudar programadores de todos os níveis a entender \
 e dominar a linguagem Python.
@@ -87,12 +67,7 @@ educadamente e redirecione a conversa para Python.
 # in-memory é suficiente.
 # ---------------------------------------------------------------------------
 class InMemoryChatHistory(BaseChatMessageHistory):
-    """Implementação simples de histórico de chat in-memory.
-
-    Armazena as mensagens em uma lista Python. O LangChain utiliza
-    esta classe para adicionar e recuperar mensagens automaticamente,
-    mantendo o contexto da conversa entre turnos.
-    """
+    """Implementação simples de histórico de chat in-memory."""
 
     def __init__(self) -> None:
         self.messages: list[BaseMessage] = []
@@ -174,7 +149,6 @@ def build_llm(use_oss: bool = False) -> Any:
         import os
         from langchain_openai import ChatOpenAI
 
-        # Tenta pegar a variável genérica ou as antigas como fallback
         api_key = os.environ.get("LLM_API_KEY", "")
 
         if api_key.lower().startswith(("ghp_", "gho_", "github_pat_")):
@@ -239,32 +213,9 @@ def build_chain(use_oss: bool = False) -> RunnableWithMessageHistory:
         ("human", "{input}"),
     ])
 
-    # -----------------------------------------------------------------
-    # 2. Modelo LLM
-    # -----------------------------------------------------------------
     llm = build_llm(use_oss)
-
-    # -----------------------------------------------------------------
-    # 3. Composição LCEL via operador pipe (`|`)
-    # -----------------------------------------------------------------
-    # Cada `|` conecta a saída de um Runnable à entrada do próximo,
-    # formando um pipeline declarativo e legível. Internamente, o
-    # LangChain cria um `RunnableSequence` que orquestra a execução.
-    # -----------------------------------------------------------------
     chain = prompt | llm | StrOutputParser()
 
-    # -----------------------------------------------------------------
-    # 4. Wrapper com Histórico
-    # -----------------------------------------------------------------
-    # `RunnableWithMessageHistory` intercepta cada chamada à chain:
-    #   - Recupera o histórico via `get_session_history(session_id)`
-    #   - Injeta as mensagens no placeholder "history" do prompt
-    #   - Após a resposta, salva input+output no histórico
-    #
-    # `input_messages_key` indica qual chave do dict de entrada contém
-    # a mensagem do usuário, e `history_messages_key` indica qual
-    # placeholder no prompt deve receber o histórico.
-    # -----------------------------------------------------------------
     return RunnableWithMessageHistory(
         chain,
         get_session_history,
@@ -376,8 +327,6 @@ def main() -> None:
             print("   Verifique sua chave de API e conexão com a internet.\n")
 
 
-# ---------------------------------------------------------------------------
-# Ponto de Entrada
-# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     main()

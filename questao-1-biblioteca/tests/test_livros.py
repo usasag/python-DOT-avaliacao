@@ -1,18 +1,5 @@
 """
 test_livros.py — Testes unitários para a API de Biblioteca Virtual.
-
-Decisão Arquitetural:
-    Os testes utilizam um banco SQLite in-memory (:memory:) completamente
-    isolado do banco de produção. A dependency injection do FastAPI nos
-    permite substituir `get_db` por uma versão que aponta para o banco
-    de teste, sem modificar nenhum código de produção.
-
-    Cada função de teste recebe um `client` limpo com tabelas recém-criadas,
-    garantindo isolamento total entre testes (sem estado compartilhado).
-
-    Utilizamos `httpx.AsyncClient` com `ASGITransport` para fazer
-    requisições HTTP diretamente ao app FastAPI em memória, sem
-    necessidade de subir um servidor real.
 """
 
 import pytest
@@ -27,12 +14,7 @@ from sqlalchemy.ext.asyncio import (
 from app.database import Base, get_db
 from app.main import app
 
-# ---------------------------------------------------------------------------
-# Configuração do banco de dados de teste (in-memory)
-# ---------------------------------------------------------------------------
-# Usamos SQLite in-memory para velocidade máxima nos testes e para
-# garantir que cada execução comece com um estado limpo.
-# ---------------------------------------------------------------------------
+
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -44,23 +26,10 @@ async_session_testing = async_sessionmaker(
 )
 
 
-# ---------------------------------------------------------------------------
-# Fixture: Sessão de banco de teste
-# ---------------------------------------------------------------------------
-# Cria e destrói as tabelas a cada teste, garantindo isolamento completo.
-# A dependency `get_db` do FastAPI é sobrescrita para usar esta sessão.
-# ---------------------------------------------------------------------------
+
 @pytest_asyncio.fixture
 async def client():
-    """
-    Fixture que fornece um AsyncClient configurado com banco in-memory.
-
-    Fluxo:
-    1. Cria todas as tabelas no banco de teste.
-    2. Sobrescreve a dependência `get_db` no app FastAPI.
-    3. Fornece o AsyncClient para o teste.
-    4. Após o teste, remove a sobrescrita e destrói as tabelas.
-    """
+    """Fixture que fornece um AsyncClient configurado com banco in-memory."""
 
     # Cria as tabelas
     async with test_engine.begin() as conn:

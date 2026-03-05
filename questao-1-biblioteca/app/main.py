@@ -1,19 +1,12 @@
 """
-main.py — Aplicação FastAPI e definição dos endpoints da API.
+main.py — Ponto de entrada da aplicação FastAPI.
 
 Decisão Arquitetural:
-    Este módulo é o ponto de entrada da aplicação e contém APENAS a
-    configuração do FastAPI e as rotas (endpoints). Toda lógica de
-    persistência, validação e modelagem está delegada aos módulos
-    especializados (database.py, models.py, schemas.py).
-
-    Essa separação permite que:
-    - Os endpoints sejam lidos como uma "tabela de rotas" limpa.
-    - Mudanças no banco não afetem a camada de apresentação.
-    - Os testes possam substituir dependências (ex: banco) facilmente.
-
-    Utilizamos o padrão `lifespan` (ASGI lifecycle) em vez do
-    deprecated `@app.on_event("startup")` para inicializar o banco.
+    Utilizamos FastAPI devido à sua alta performance e suporte nativo a
+    programação assíncrona, além de gerar documentação interativa (Swagger UI)
+    automaticamente. A aplicação é assíncrona do início ao fim, desde as
+    rotas até as requisições ao banco de dados (via aiosqlite), garantindo
+    maior concorrência e escalabilidade.
 """
 
 from collections.abc import AsyncGenerator
@@ -29,13 +22,6 @@ from app.models import Livro
 from app.schemas import LivroCreate, LivroResponse
 
 
-# ---------------------------------------------------------------------------
-# Lifespan — Ciclo de vida da aplicação
-# ---------------------------------------------------------------------------
-# O `asynccontextmanager` nos permite executar código no startup (antes do
-# `yield`) e no shutdown (após o `yield`). Aqui, criamos as tabelas do
-# banco na inicialização. Em produção, isso seria gerenciado pelo Alembic.
-# ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Gerencia o ciclo de vida da aplicação: cria tabelas no startup."""
@@ -81,8 +67,8 @@ async def criar_livro(
     4. O `db.refresh()` recarrega o objeto com o `id` gerado pelo banco.
 
     Args:
-        livro_data: Dados do livro validados pelo schema LivroCreate.
-        db: Sessão do banco injetada via Depends (dependency injection).
+        livro_data: Dados de entrada validados do livro.
+        db: Sessão de conexão com o banco de dados.
 
     Returns:
         O livro criado com todos os campos, incluindo o id gerado.
