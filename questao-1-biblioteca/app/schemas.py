@@ -14,7 +14,13 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class LivroCreate(BaseModel):
-    """Schema de entrada para criação de um livro (POST /livros/)."""
+    """
+    Schema de entrada para criação de um livro (POST /livros/).
+
+    Todos os campos são obrigatórios. Validações adicionais garantem
+    que strings não sejam vazias, prevenindo registros sem conteúdo
+    semântico no banco.
+    """
 
     titulo: str
     autor: str
@@ -47,7 +53,15 @@ class LivroCreate(BaseModel):
 
 
 class LivroResponse(BaseModel):
-    """Schema de saída para representação de um livro nas respostas da API."""
+    """
+    Schema de saída para representação de um livro nas respostas da API.
+
+    Inclui o campo `id` gerado pelo banco, que não está presente no
+    schema de criação. O `from_attributes=True` permite que o Pydantic
+    leia diretamente os atributos do objeto SQLAlchemy ORM, sem
+    necessidade de conversão manual para dicionário.
+    """
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int

@@ -1,5 +1,18 @@
 """
 test_livros.py — Testes unitários para a API de Biblioteca Virtual.
+
+Decisão Arquitetural:
+    Os testes utilizam um banco SQLite in-memory (:memory:) completamente
+    isolado do banco de produção. A dependency injection do FastAPI nos
+    permite substituir `get_db` por uma versão que aponta para o banco
+    de teste, sem modificar nenhum código de produção.
+
+    Cada função de teste recebe um `client` limpo com tabelas recém-criadas,
+    garantindo isolamento total entre testes (sem estado compartilhado).
+
+    Utilizamos `httpx.AsyncClient` com `ASGITransport` para fazer
+    requisições HTTP diretamente ao app FastAPI em memória, sem
+    necessidade de subir um servidor real.
 """
 
 import pytest
