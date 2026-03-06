@@ -1,4 +1,5 @@
-# Avaliação Técnica — Python
+# Avaliação Técnica — Python Backend com IA - DOT Group
+## Vitor Bispo Braúna - Engenheiro de IA
 
 Repositório contendo as 3 questões da avaliação técnica de Python, cada uma resolvida como um projeto independente com estrutura profissional, testes automatizados e documentação.
 
@@ -8,7 +9,7 @@ Repositório contendo as 3 questões da avaliação técnica de Python, cada uma
 
 ```
 python-DOT-avaliacao/
-├── questao-1-biblioteca/   # API RESTful com FastAPI
+├── questao-1-biblioteca/   # API RESTful com FastAPI de CRUD de livros
 ├── questao-2-chatbot/      # Chatbot CLI com LangChain + GPT-4.1
 ├── questao-3-busca/        # Busca Semântica com FAISS
 └── README.md               # Este arquivo
